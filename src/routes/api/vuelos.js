@@ -72,7 +72,7 @@ vuelosRouter.get('/', async (req, res) => {
         // Simple heuristic: if length > 3, search for IATA using Amadeus
         if (origin.length > 3) {
             const response = await amadeus.referenceData.locations.get({
-                keyword: origin,
+                keyword: origin.normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
                 subType: Amadeus.location.city
             });
             if (response.data.length > 0) originCode = response.data[0].iataCode;
@@ -80,7 +80,7 @@ vuelosRouter.get('/', async (req, res) => {
 
         if (destination.length > 3) {
             const response = await amadeus.referenceData.locations.get({
-                keyword: destination,
+                keyword: destination.normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
                 subType: Amadeus.location.city
             });
             // Try to find a match, but destinations from database (seed.js) are city names
