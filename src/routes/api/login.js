@@ -27,11 +27,19 @@ router.post("/", async (req, res) => {
 
     // Generar token JWT
     const payload = { id: user.id, email: user.email };
-    const secret = "mi_secreto";
+    const secret = "mi_secreto"; // Idealmente usar env var
     const token = jwt.sign(payload, secret, { expiresIn: '1h' });
 
+    // Guardar sesión en la base de datos
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hora
+    await client.query(
+      "INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)",
+      [user.id, token, expiresAt]
+    );
+
     res.status(200).json({ message: "Login exitoso", token });
-  } catch (_err) {
+  } catch (error) {
+    console.error("Error en login:", error);
     res.status(500).json({ message: "Error al iniciar sesión." });
   }
 });

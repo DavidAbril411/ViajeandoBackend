@@ -29,6 +29,29 @@ app.use('/api/favoritos', favoritosRouter);
 app.use('/api/origen', origenRouter);
 
 
+app.use('/api/origen', origenRouter);
+
+
+// Inicializar tabla de sesiones si no existe
+const initDB = async () => {
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        token VARCHAR(512) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NULL,
+        FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE
+      )
+    `);
+    console.log("Tabla de sesiones verificada.");
+  } catch (error) {
+    console.error("Error al inicializar la DB:", error);
+  }
+};
+initDB();
+
 // Configurar el puerto del servidor
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {

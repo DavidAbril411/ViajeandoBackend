@@ -10,47 +10,48 @@ registerRouter.post("/", async (req, res) => {
     try {
         const { email, contraseña } = req.body;
 
-        // Validar si el email ya está registrado
-        client.query("SELECT * FROM usuarios WHERE email = ?", [email], async (err, results) => {
-            if (err) {
-                console.error("Error al verificar el email:", err);
-                return res.status(500).json({ message: "Error al verificar el email." });
-            }
+        if (!email || !contraseña) {
+            return res.status(400).json({ message: "Email y contraseña son requeridos." });
+        }
 
-            if (results.length > 0) {
-                return res.status(400).json({
-                    message: "El email ya está en uso.",
-                });
-            }
+        // 1. Validar si el email ya está registrado
+        const [existingUsers] = await client.query("SELECT * FROM usuarios WHERE email = ?", [email]);
 
-            // Encriptar la contraseña
-            const hashedPassword = await bcrypt.hash(contraseña, 10); // Salting factor = 10
+        if (existingUsers.length > 0) {
+            return res.status(400).json({ message: "El email ya está en uso." });
+        }
 
-            // Insertar el nuevo usuario en la base de datos
-            client.query(
-                "INSERT INTO usuarios (email, contraseña) VALUES (?, ?)",
-                [email, hashedPassword],
-                (err, _result) => {
-                    if (err) {
-                        console.error("Error al registrar el usuario:", err);
-                        return res.status(500).json({ message: "Error al registrar el usuario." });
-                    }
+        // 2. Encriptar la contraseña
+        const hashedPassword = await bcrypt.hash(contraseña, 10);
 
-                    // Generar token JWT después del registro exitoso
-                    const payload = { email, id: _result.insertId }; // Usamos el id recién insertado
-                    const secret = "mi_secreto";
-                    const token = jwt.sign(payload, secret, { expiresIn: '1h' });
+        // 3. Insertar el nuevo usuario
+        const [result] = await client.query(
+            "INSERT INTO usuarios (email, contraseña) VALUES (?, ?)",
+            [email, hashedPassword]
+        );
 
-                    // Enviar respuesta con el token
-                    res.status(201).json({
-                        message: "Usuario registrado exitosamente.",
-                        token,
-                    });
-                }
-            );
+        const userId = result.insertId;
+
+        // 4. Generar token JWT
+        const secret = "mi_secreto"; // Idealmente usar process.env.JWT_SECRET
+        const token = jwt.sign({ email, id: userId }, secret, { expiresIn: '1h' });
+
+        // 5. Crear sesión en la base de datos
+        // La fecha de expiración es opcional según tu esquema, aquí la dejamos NULL o calculamos 1h
+        const expiresAt = new Date(Date.now() + 3600000); // 1 hora
+        await client.query(
+            "INSERT INTO sessions (user_id, token, expires_at) VALUES (?, ?, ?)",
+            [userId, token, expiresAt]
+        );
+
+        // 6. Enviar respuesta
+        res.status(201).json({
+            message: "Usuario registrado exitosamente.",
+            token,
         });
-    } catch (_err) {
-        console.error("Error en el registro:", _err);
+
+    } catch (error) {
+        console.error("Error en el registro:", error);
         res.status(500).json({ message: "Error al registrar el usuario." });
     }
 });
