@@ -5,12 +5,13 @@ import loginRouter from './routes/api/login.js';
 import registerRouter from './routes/api/register.js';
 import favoritosRouter from './routes/api/favoritos.js';
 import origenRouter from './routes/api/origen.js';
+import seedRouter from './routes/api/seed.js';
 
 const app = express();
 
 // Configuración de CORS
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGIN || '*', // Permite configurar el origen desde variables de entorno
+  origin: process.env.ALLOWED_ORIGIN || '*',
   methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
@@ -27,6 +28,7 @@ app.use('/api/login', loginRouter);
 app.use('/api/register', registerRouter);
 app.use('/api/favoritos', favoritosRouter);
 app.use('/api/origen', origenRouter);
+app.use('/api/seed', seedRouter); // Endpoint para poblar datos
 
 
 app.use('/api/origen', origenRouter);
@@ -45,7 +47,12 @@ const initDB = async () => {
         FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE
       )
     `);
-    console.log("Tabla de sesiones verificada.");
+
+    // Quick migration for image_url
+    try { await client.query("ALTER TABLE DESTINOS ADD COLUMN IMAGE_URL VARCHAR(512)"); } catch (e) { /* ignore dup */ }
+    try { await client.query("ALTER TABLE ORIGEN ADD COLUMN image_url VARCHAR(512)"); } catch (e) { /* ignore dup */ }
+
+    console.log("DB verificada.");
   } catch (error) {
     console.error("Error al inicializar la DB:", error);
   }
