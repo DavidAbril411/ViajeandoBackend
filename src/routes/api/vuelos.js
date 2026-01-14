@@ -87,12 +87,16 @@ vuelosRouter.get('/', async (req, res) => {
             if (response.data.length > 0) destCode = response.data[0].iataCode;
         }
 
-        console.log(`Searching flights from ${originCode} to ${destCode} on ${date}`);
+        // Ensure date is not in the past (simple check)
+        const today = new Date().toISOString().split('T')[0];
+        const searchDate = date < today ? today : date;
+
+        console.log(`Searching flights from ${originCode} to ${destCode} on ${searchDate}`);
 
         const response = await amadeus.shopping.flightOffersSearch.get({
             originLocationCode: originCode,
             destinationLocationCode: destCode,
-            departureDate: date,
+            departureDate: searchDate,
             adults: passengers || 1,
             max: 10
         });

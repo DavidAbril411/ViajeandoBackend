@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors'; // Importa cors
+import { client } from './db.js';
 import destinosRouter from './routes/api/destinos.js';
 import loginRouter from './routes/api/login.js';
 import registerRouter from './routes/api/register.js';
