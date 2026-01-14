@@ -10,7 +10,7 @@ const app = express();
 
 // Configuración de CORS
 const corsOptions = {
-  origin: 'https://viajeando.com.ar', // Acepta solicitudes del dominio principal
+  origin: process.env.ALLOWED_ORIGIN || '*', // Permite configurar el origen desde variables de entorno
   methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
