@@ -12,7 +12,7 @@ const TELEPORT_API_URL = 'https://api.teleport.org/api/urban_areas/';
 async function getUrbanAreas() {
     try {
         const response = await axios.get(TELEPORT_API_URL);
-        return response.data._links['ua:item'].slice(0, 10); // Get top 10
+        return response.data._links['ua:item'].slice(0, 50); // Get top 50
     } catch (error) {
         console.error("Error fetching Teleport data:", error.message);
         return [];
