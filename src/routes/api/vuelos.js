@@ -66,25 +66,53 @@ vuelosRouter.get('/', async (req, res) => {
         // In a real app, you'd search for locations first. 
         // For now, let's assume the frontend sends city names and we try to search locations or use them directly if they look like IATA.
 
-        let originCode = origin;
-        let destCode = destination;
 
-        // Simple heuristic: if length > 3, search for IATA using Amadeus
-        if (origin.length > 3) {
-            const response = await amadeus.referenceData.locations.get({
-                keyword: origin.normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
-                subType: Amadeus.location.city
-            });
-            if (response.data.length > 0) originCode = response.data[0].iataCode;
+        // Sandbox environment often fails to resolve cities by name, so we use a static map for known seed data.
+        const CITY_CODES = {
+            'buenos aires': 'EZE',
+            'cordoba': 'COR', // Amadeus might use COR or ODB. COR is common.
+            'paris': 'PAR',
+            'dubai': 'DXB',
+            'madrid': 'MAD',
+            'london': 'LON',
+            'new york': 'NYC',
+            'rome': 'ROM',
+            'tokyo': 'TYO',
+            'barcelona': 'BCN',
+            'miami': 'MIA',
+            'rio de janeiro': 'GIG',
+            'sao paulo': 'GRU',
+            'santiago': 'SCL',
+            'lima': 'LIM',
+            'cancun': 'CUN'
+        };
+
+        let originCode = CITY_CODES[origin.toLowerCase()] || origin;
+        let destCode = CITY_CODES[destination.toLowerCase()] || destination;
+
+        // Simple heuristic: if length > 3 AND not in our map, search for IATA
+        if (originCode.length > 3) {
+            try {
+                const response = await amadeus.referenceData.locations.get({
+                    keyword: origin.normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
+                    subType: 'CITY'
+                });
+                if (response.data.length > 0) originCode = response.data[0].iataCode;
+            } catch (e) {
+                console.log("Could not resolve origin:", origin);
+            }
         }
 
-        if (destination.length > 3) {
-            const response = await amadeus.referenceData.locations.get({
-                keyword: destination.normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
-                subType: Amadeus.location.city
-            });
-            // Try to find a match, but destinations from database (seed.js) are city names
-            if (response.data.length > 0) destCode = response.data[0].iataCode;
+        if (destCode.length > 3) {
+            try {
+                const response = await amadeus.referenceData.locations.get({
+                    keyword: destination.normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
+                    subType: 'CITY'
+                });
+                if (response.data.length > 0) destCode = response.data[0].iataCode;
+            } catch (e) {
+                console.log("Could not resolve destination:", destination);
+            }
         }
 
         // Ensure date is not in the past (simple check)

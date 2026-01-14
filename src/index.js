@@ -35,7 +35,7 @@ app.use('/api/seed', seedRouter); // Endpoint para poblar datos
 app.use('/api/vuelos', vuelosRouter); // Endpoint para buscar vuelos
 
 
-app.use('/api/origen', origenRouter);
+
 
 
 // Inicializar tabla de sesiones si no existe
