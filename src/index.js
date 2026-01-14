@@ -30,7 +30,7 @@ app.use('/api/origen', origenRouter);
 
 
 // Configurar el puerto del servidor
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
 });
