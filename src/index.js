@@ -5,7 +5,7 @@ import loginRouter from './routes/api/login.js';
 import registerRouter from './routes/api/register.js';
 import favoritosRouter from './routes/api/favoritos.js';
 import origenRouter from './routes/api/origen.js';
-import origenRouter from './routes/api/origen.js';
+
 import seedRouter from './routes/api/seed.js';
 import vuelosRouter from './routes/api/vuelos.js';
 
