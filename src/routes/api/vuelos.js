@@ -22,6 +22,16 @@ vuelosRouter.get('/', async (req, res) => {
         return res.status(400).json({ message: 'Missing required parameters: origin, destination, date' });
     }
 
+    // Diccionario estático de aerolíneas para mock/fallback
+    const CARRIER_DICT = {
+        AR: 'AEROLINEAS ARGENTINAS', LA: 'LATAM AIRLINES', AA: 'AMERICAN AIRLINES',
+        UA: 'UNITED AIRLINES', DL: 'DELTA AIR LINES', AC: 'AIR CANADA',
+        BA: 'BRITISH AIRWAYS', AF: 'AIR FRANCE', LH: 'LUFTHANSA',
+        IB: 'IBERIA', AZ: 'ITA AIRWAYS', EK: 'EMIRATES', QR: 'QATAR AIRWAYS',
+        TK: 'TURKISH AIRLINES', JL: 'JAPAN AIRLINES', NH: 'ANA',
+        MK: 'MOCKAIR (DEMO)', KL: 'KLM', VY: 'VUELING'
+    };
+
     // Mock data for fallback
     const mockFlights = [
         {
@@ -33,10 +43,11 @@ vuelosRouter.get('/', async (req, res) => {
                     departure: { iataCode: 'MOCK_ORG', at: `${date}T10:00:00` },
                     arrival: { iataCode: 'MOCK_DST', at: `${date}T12:30:00` },
                     carrierCode: 'MK',
-                    number: '101'
+                    number: '101',
+                    operating: { carrierCode: 'MK' }
                 }]
             }],
-            travelerPricings: [{ travelerType: 'ADULT', price: { total: '150.00' } }]
+            travelerPricings: [{ travelerType: 'ADULT', price: { total: '150.00' }, fareDetailsBySegment: [{ cabin: 'ECONOMY', includedCheckedBags: { weight: 23, weightUnit: 'KG' } }] }]
         },
         {
             id: 'mock-2',
@@ -47,18 +58,18 @@ vuelosRouter.get('/', async (req, res) => {
                     departure: { iataCode: 'MOCK_ORG', at: `${date}T15:00:00` },
                     arrival: { iataCode: 'MOCK_DST', at: `${date}T19:15:00` },
                     carrierCode: 'MK',
-                    number: '202'
+                    number: '202',
+                    operating: { carrierCode: 'MK' }
                 }]
             }],
-            travelerPricings: [{ travelerType: 'ADULT', price: { total: '280.50' } }]
+            travelerPricings: [{ travelerType: 'ADULT', price: { total: '280.50' }, fareDetailsBySegment: [{ cabin: 'ECONOMY', includedCheckedBags: { weight: 23, weightUnit: 'KG' } }] }]
         }
     ];
 
     if (!amadeus) {
         console.warn("Amadeus keys not found. returning mock data.");
-        // Simulate a slight delay for realism
         await new Promise(r => setTimeout(r, 1000));
-        return res.json({ data: mockFlights, warning: "Showing mock data. Configure AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET to see real flights." });
+        return res.json({ data: mockFlights, dictionaries: { carriers: CARRIER_DICT }, warning: "Showing mock data. Configure AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET to see real flights." });
     }
 
     try {
@@ -129,12 +140,14 @@ vuelosRouter.get('/', async (req, res) => {
             max: 10
         });
 
-        res.json(response.data);
+        // Amadeus response incluye dictionaries con nombres de aerolíneas
+        const result = JSON.parse(response.body);
+        res.json({ data: result.data, dictionaries: result.dictionaries || { carriers: CARRIER_DICT } });
 
     } catch (error) {
         console.error("Amadeus API error:", error);
         // Fallback to mock data on error so the UI still shows something
-        res.json({ data: mockFlights, warning: "Error fetching real flights (check keys/quota). Showing mock data.", error: error.message });
+        res.json({ data: mockFlights, dictionaries: { carriers: CARRIER_DICT }, warning: "Error fetching real flights (check keys/quota). Showing mock data.", error: error.message });
     }
 });
 
